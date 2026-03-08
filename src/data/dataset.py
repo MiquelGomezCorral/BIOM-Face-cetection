@@ -10,7 +10,7 @@ from maikol_utils.print_utils import print_separator
 from maikol_utils.file_utils import list_dir_files
 
 from src.config import Configuration
-from src.data import local_normalize_image, get_integral_image, get_integral_squared
+from .filter import local_normalize_image
 
 class FACES_DATASET(Dataset):
     def __init__(self, partition = "train", transform = None, CONFIG: Configuration = None):

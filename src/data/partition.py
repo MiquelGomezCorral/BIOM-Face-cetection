@@ -1,5 +1,4 @@
 from PIL import Image
-import numpy as np
 from tqdm import tqdm
 from maikol_utils.file_utils import list_dir_files
 from maikol_utils.print_utils import print_separator
