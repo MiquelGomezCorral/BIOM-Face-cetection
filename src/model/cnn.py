@@ -4,7 +4,6 @@ import torch.nn.functional as F
 
 from torch.utils.data import DataLoader
 
-import torch.nn.functional as F
 import torchvision.transforms as transforms
 
 
@@ -21,21 +20,37 @@ class FaceCNN(nn.Module):
         super(FaceCNN, self).__init__()
         self.out_size = out_size
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
-    
-        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=16, kernel_size=3, padding="same")
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding="same")
-        self.conv3 = nn.Conv2d(in_channels=32, out_channels=48, kernel_size=3, padding="same")
 
-        self.fc = nn.Linear(48 * self.out_size[0] * self.out_size[1], num_classes)
+        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=32, kernel_size=3, padding="same")
+        self.bn1   = nn.BatchNorm2d(32)
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, padding="same")
+        self.bn2   = nn.BatchNorm2d(32)
+        self.conv3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding="same")
+        self.bn3   = nn.BatchNorm2d(64)
+        self.conv4 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding="same")
+        self.bn4   = nn.BatchNorm2d(64)
+        self.conv5 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding="same")
+        self.bn5   = nn.BatchNorm2d(128)
+
+        self.dropout = nn.Dropout(p=0.5)
+        self.fc1 = nn.Linear(128 * self.out_size[0] * self.out_size[1], 128)
+        self.fc2 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, num_classes)
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))           
-        x = self.pool(F.relu(self.conv2(x)))
-        x = self.pool(F.relu(self.conv3(x)))
+        x = self.pool(F.relu(self.bn1(self.conv1(x))))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = self.pool(F.relu(self.bn3(self.conv3(x))))
+        x = F.relu(self.bn4(self.conv4(x)))
+        x = self.pool(F.relu(self.bn5(self.conv5(x))))
 
-        x = torch.nn.functional.adaptive_max_pool2d(x, output_size=self.out_size)
+        x = F.adaptive_avg_pool2d(x, output_size=self.out_size)
         x = torch.flatten(x, 1)
-        return torch.sigmoid(self.fc(x))
+
+        x = self.dropout(F.relu(self.fc1(x)))
+        x = self.dropout(F.relu(self.fc2(x)))
+        x = self.fc3(x)
+        return x  # raw logits — use BCEWithLogitsLoss
     
 
 
@@ -47,7 +62,7 @@ class FaceDetectionModule(pl.LightningModule):
             in_channels=1 if CONFIG.gray_scale else 3,
             num_classes=1,
         )
-        self.criterion = nn.BCELoss()
+        self.criterion = nn.BCEWithLogitsLoss()
         self.train_acc = BinaryAccuracy()
         self.val_acc   = BinaryAccuracy()
         self.test_acc  = BinaryAccuracy()
@@ -61,7 +76,7 @@ class FaceDetectionModule(pl.LightningModule):
         y     = batch["label"].float().unsqueeze(1)
         y_hat = self(x)
         loss  = self.criterion(y_hat, y)
-        preds = (y_hat > 0.5).squeeze(1)
+        preds = (y_hat > 0.0).squeeze(1)  # threshold at 0 for logits
         return loss, preds, batch["label"]
 
     def training_step(self, batch, batch_idx):
@@ -114,7 +129,7 @@ class FaceDataModule(pl.LightningDataModule):
         base_transform = transforms.Compose([
             transforms.ToTensor(),
         ])
-        self.train_ds = FACES_DATASET("train", transform=base_transform, CONFIG=self.config)
+        self.train_ds = FACES_DATASET("train", transform=train_transform, CONFIG=self.config)
         self.val_ds   = FACES_DATASET("val",   transform=base_transform,  CONFIG=self.config)
         self.test_ds  = FACES_DATASET("test",  transform=base_transform,  CONFIG=self.config)
 

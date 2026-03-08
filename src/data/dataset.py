@@ -21,11 +21,11 @@ class FACES_DATASET(Dataset):
         self.config = CONFIG
 
         if self.partition == "train":
-            self.data_paths, self.n = list_dir_files(self.config.train_path)
+            self.data_paths, self.n = list_dir_files(self.config.train_f_path)
         elif self.partition == "val":
-            self.data_paths, self.n = list_dir_files(self.config.val_path)
+            self.data_paths, self.n = list_dir_files(self.config.val_f_path)
         else:
-            self.data_paths, self.n = list_dir_files(self.config.test_path)
+            self.data_paths, self.n = list_dir_files(self.config.test_f_path)
 
         print(f" - Total data {self.partition}: {self.n} images")
 
@@ -40,20 +40,20 @@ class FACES_DATASET(Dataset):
             img = cv2.imread(self.data_paths[idx])
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         
-        # Filter for the images
-        img = local_normalize_image(self.config, img)
+        # # Filter for the images
+        # img = local_normalize_image(self.config, img)
 
-        # Rescale to [0, 255] preserving full dynamic range
-        img_min, img_max = img.min(), img.max()
-        if img_max > img_min:
-            img = ((img - img_min) / (img_max - img_min) * 255).astype(np.uint8)
-        else:
-            img = np.zeros_like(img, dtype=np.uint8)
+        # # Rescale to [0, 255] preserving full dynamic range
+        # img_min, img_max = img.min(), img.max()
+        # if img_max > img_min:
+        #     img = ((img - img_min) / (img_max - img_min) * 255).astype(np.uint8)
+        # else:
+        #     img = np.zeros_like(img, dtype=np.uint8)
 
         # Resize
         img = cv2.resize(img, (self.config.crop_size, self.config.crop_size), interpolation=cv2.INTER_AREA)
         
-        # Convert to PIL for transforms
+        # Convert to PIL for transforms (mode 'L' for grayscale, 'RGB' for colour)
         img = Image.fromarray(img)
 
         # data augmentation

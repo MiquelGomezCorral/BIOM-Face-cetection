@@ -1,6 +1,6 @@
 import os
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor
 
 from src.config import Configuration
 
@@ -14,15 +14,17 @@ def train_model(CONFIG: Configuration, data_module, model_module, ckpt_path: str
         max_epochs=CONFIG.epochs,
         accelerator="auto",
         devices="auto",
+        gradient_clip_val=1.0,
         callbacks=[
             ModelCheckpoint(
                 dirpath=dirpath,
                 filename=filename,
-                monitor="val_loss",
-                mode="min",
+                monitor="val_f1",
+                mode="max",
                 save_top_k=1,
             ),
-            EarlyStopping(monitor="val_loss", patience=3, mode="min"),
+            EarlyStopping(monitor="val_f1", patience=10, mode="max"),
+            LearningRateMonitor(logging_interval="epoch"),
         ],
         log_every_n_steps=10,
     )

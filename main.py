@@ -11,6 +11,7 @@ def main():
         model=FaceCNN(
             in_channels=1 if CONFIG.gray_scale else 3,
             num_classes=1,
+            out_size=(1,1)
         ),
     )
 
@@ -23,3 +24,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
