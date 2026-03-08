@@ -2,8 +2,6 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-import torch
-from torch import nn
 from torch.utils.data import DataLoader
 
 import torch.nn.functional as F
@@ -45,7 +43,7 @@ class FaceDetectionModule(pl.LightningModule):
     def __init__(self, CONFIG: Configuration, model: nn.Module = None):
         super().__init__()
         self.config = CONFIG
-        self.model = model if model is not None else CNN(
+        self.model = model if model is not None else FaceCNN(
             in_channels=1 if CONFIG.gray_scale else 3,
             num_classes=1,
         )
@@ -116,18 +114,27 @@ class FaceDataModule(pl.LightningDataModule):
         base_transform = transforms.Compose([
             transforms.ToTensor(),
         ])
-        self.train_ds = FACES_DATASET("train", transform=train_transform, CONFIG=self.config)
+        self.train_ds = FACES_DATASET("train", transform=base_transform, CONFIG=self.config)
         self.val_ds   = FACES_DATASET("val",   transform=base_transform,  CONFIG=self.config)
         self.test_ds  = FACES_DATASET("test",  transform=base_transform,  CONFIG=self.config)
 
     def train_dataloader(self):
-        return DataLoader(self.train_ds, batch_size=self.config.batch_size, shuffle=True,
-                          num_workers=0)
+        return DataLoader(
+            self.train_ds, batch_size=self.config.batch_size, shuffle=True,
+            num_workers=self.config.num_workers, pin_memory=True,
+            persistent_workers=self.config.num_workers > 0,
+        )
 
     def val_dataloader(self):
-        return DataLoader(self.val_ds, batch_size=self.config.batch_size, shuffle=False,
-                          num_workers=0)
+        return DataLoader(
+            self.val_ds, batch_size=self.config.batch_size, shuffle=False,
+            num_workers=self.config.num_workers, pin_memory=True,
+            persistent_workers=self.config.num_workers > 0,
+        )
 
     def test_dataloader(self):
-        return DataLoader(self.test_ds, batch_size=self.config.batch_size, shuffle=False,
-                          num_workers=0)
+        return DataLoader(
+            self.test_ds, batch_size=self.config.batch_size, shuffle=False,
+            num_workers=self.config.num_workers, pin_memory=True,
+            persistent_workers=self.config.num_workers > 0,
+        )

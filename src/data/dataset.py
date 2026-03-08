@@ -38,13 +38,18 @@ class FACES_DATASET(Dataset):
             img = cv2.imread(self.data_paths[idx], cv2.IMREAD_GRAYSCALE)
         else:
             img = cv2.imread(self.data_paths[idx])
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         
         # Filter for the images
         img = local_normalize_image(self.config, img)
-        
-        # Clip and convert to uint8
-        img = np.clip(img, 0, 255).astype(np.uint8)
-        
+
+        # Rescale to [0, 255] preserving full dynamic range
+        img_min, img_max = img.min(), img.max()
+        if img_max > img_min:
+            img = ((img - img_min) / (img_max - img_min) * 255).astype(np.uint8)
+        else:
+            img = np.zeros_like(img, dtype=np.uint8)
+
         # Resize
         img = cv2.resize(img, (self.config.crop_size, self.config.crop_size), interpolation=cv2.INTER_AREA)
         
@@ -77,12 +82,15 @@ def load_faces(CONFIG: Configuration):
     ])
     
     train_dataset = FACES_DATASET(partition="train", transform=train_da, CONFIG=CONFIG)
-    val_dataset = FACES_DATASET(partition="val", transform=train_da, CONFIG=CONFIG)
+    val_dataset = FACES_DATASET(partition="val", transform=test_transform, CONFIG=CONFIG)
     test_dataset = FACES_DATASET(partition="test", transform=test_transform, CONFIG=CONFIG)
 
     # DataLoader Class
-    train_dataloader = DataLoader(train_dataset, CONFIG.batch_size, shuffle=True, num_workers=0)
-    val_dataloader = DataLoader(val_dataset, CONFIG.batch_size, shuffle=False, num_workers=0)
-    test_dataloader = DataLoader(test_dataset, CONFIG.batch_size, shuffle=False, num_workers=0)
+    train_dataloader = DataLoader(train_dataset, CONFIG.batch_size, shuffle=True,
+                                  num_workers=CONFIG.num_workers, pin_memory=True)
+    val_dataloader = DataLoader(val_dataset, CONFIG.batch_size, shuffle=False,
+                                num_workers=CONFIG.num_workers, pin_memory=True)
+    test_dataloader = DataLoader(test_dataset, CONFIG.batch_size, shuffle=False,
+                                 num_workers=CONFIG.num_workers, pin_memory=True)
 
     return train_dataloader, val_dataloader, test_dataloader

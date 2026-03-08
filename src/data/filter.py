@@ -1,52 +1,110 @@
 import numpy as np
-
+from concurrent.futures import ThreadPoolExecutor
 from src.config import Configuration
 
-
 def local_normalize_image(CONFIG: Configuration, img: np.ndarray):
-    integral = get_integral_image(img) 
+    integral   = get_integral_image(img)
     integral_2 = get_integral_squared_image(img)
 
-    x_idx, y_idx = np.indices(img.shape)
-    vect_normalize = np.vectorize(
-        local_normalize_pixel,
-        excluded=["integral", "integral_2", "win_size"]
-    )
+    H, W = img.shape
+    half = CONFIG.normalize_window // 2
 
-    return vect_normalize(
-        img,
-        integral=integral,
-        integral_2=integral_2,
-        x=x_idx,
-        y=y_idx,
-        win_size=CONFIG.normalize_window
-    )
+    rows = np.arange(H)
+    cols = np.arange(W)
 
-def local_normalize_pixel(pixel, integral, integral_2, x, y, win_size):
-    win = win_size // 2
-    max_row = integral.shape[0] - 1
-    max_col = integral.shape[1] - 1
+    r1 = np.maximum(0,     rows - half)[:, None]   # (H, 1)
+    r2 = np.minimum(H - 1, rows + half)[:, None]
+    c1 = np.maximum(0,     cols - half)[None, :]   # (1, W)
+    c2 = np.minimum(W - 1, cols + half)[None, :]
 
-    # Ajustar límites
-    r1 = max(0, x - win)
-    r2 = min(max_row, x + win)
-    c1 = max(0, y - win)
-    c2 = min(max_col, y + win)
+    n_pixels = (r2 - r1 + 1) * (c2 - c1 + 1)      # (H, W)
 
-    pixels = (r2 - r1 + 1) * (c2 - c1 + 1)
+    # Clamp shifted indices so fancy-indexing never goes out of bounds;
+    # the np.where calls below zero-out the values where the condition
+    # requires it (matching the scalar version's boundary logic).
+    r1m1 = np.clip(r1 - 1, 0, H - 1)
+    c1m1 = np.clip(c1 - 1, 0, W - 1)
 
-    suma = get_integral_sum(integral, r1, c1, r2, c2)
-    suma_2 = get_integral_sum(integral_2, r1, c1, r2, c2)
-    mu = suma / pixels
+    def _region_sum(integ):
+        D     = integ[r2,   c2  ]
+        B_raw = integ[r1m1, c2  ]
+        C_raw = integ[r2,   c1m1]
+        A_raw = integ[r1m1, c1m1]
+        B = np.where(r1 > 0,            B_raw, 0)
+        C = np.where(c1 > 0,            C_raw, 0)
+        A = np.where((r1 > 0) & (c1 > 0), A_raw, 0)
+        return D - B - C + A
 
-    var = max(0.0, (suma_2 - (2*mu*suma) + pixels*mu*mu)/pixels) 
+    suma   = _region_sum(integral).astype(np.float64)
+    suma_2 = _region_sum(integral_2).astype(np.float64)
+
+    mu  = suma / n_pixels
+    var = np.maximum((suma_2 - 2 * mu * suma + n_pixels * mu * mu) / n_pixels, 0.0)
     sig = np.sqrt(var)
 
-    # Prevent division by zero
-    if sig < 1e-6:
-        return 0.0
+    return np.where(sig < 1e-6, 0.0, (img.astype(np.float64) - mu) / sig)
 
-    return (pixel - mu)/sig
+
+
+
+
+# def local_normalize_image(CONFIG: Configuration, img: np.ndarray):
+#     integral = get_integral_image(img) 
+#     integral_2 = get_integral_squared_image(img)
+
+#     # x_idx, y_idx = np.indices(img.shape)
+#     # vect_normalize = np.vectorize(
+#     #     local_normalize_pixel,
+#     #     excluded=["integral", "integral_2", "win_size"]
+#     # )
+
+#     # return vect_normalize(
+#     #     img,
+#     #     integral=integral,
+#     #     integral_2=integral_2,
+#     #     x=x_idx,
+#     #     y=y_idx,
+#     #     win_size=CONFIG.normalize_window
+#     # )
+#     H, W = img.shape
+#     out_img = np.zeros((H, W), dtype=np.float64)
+
+#     # Wrapper to process an entire row in one thread
+#     def process_row(x):
+#         for y in range(W):
+#             out_img[x, y] = local_normalize_pixel(img[x, y], integral, integral_2, x, y, CONFIG.normalize_window)
+
+#     # Execute rows in parallel
+#     with ThreadPoolExecutor() as executor:
+#         executor.map(process_row, range(H))
+
+#     return out_img
+
+# def local_normalize_pixel(pixel, integral, integral_2, x, y, win_size):
+#     win = win_size // 2
+#     max_row = integral.shape[0] - 1
+#     max_col = integral.shape[1] - 1
+
+#     # Ajustar límites
+#     r1 = max(0, x - win)
+#     r2 = min(max_row, x + win)
+#     c1 = max(0, y - win)
+#     c2 = min(max_col, y + win)
+
+#     pixels = (r2 - r1 + 1) * (c2 - c1 + 1)
+
+#     suma = get_integral_sum(integral, r1, c1, r2, c2)
+#     suma_2 = get_integral_sum(integral_2, r1, c1, r2, c2)
+#     mu = suma / pixels
+
+#     var = max(0.0, (suma_2 - (2*mu*suma) + pixels*mu*mu)/pixels) 
+#     sig = np.sqrt(var)
+
+#     # Prevent division by zero
+#     if sig < 1e-6:
+#         return 0.0
+
+#     return (pixel - mu)/sig
 
 
 # Versiones rápidas
