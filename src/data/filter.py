@@ -123,7 +123,6 @@ def get_integral_sum(integral: np.ndarray, x1, y1, x2, y2) -> int:
     return D - B - C + A
 
 
-
 # Versiones lentas
 
 # def get_integral_image(img: np.ndarray):

@@ -43,7 +43,7 @@ class FACES_DATASET(Dataset):
         # # Filter for the images
         # img = local_normalize_image(self.config, img)
 
-        # # Rescale to [0, 255] preserving full dynamic range
+        # # # Rescale to [0, 255] preserving full dynamic range
         # img_min, img_max = img.min(), img.max()
         # if img_max > img_min:
         #     img = ((img - img_min) / (img_max - img_min) * 255).astype(np.uint8)
@@ -60,7 +60,7 @@ class FACES_DATASET(Dataset):
         img_tensor = self.transform(img)
 
         # Label
-        label = torch.tensor('Human' in self.data_paths[idx], dtype=torch.long)
+        label = torch.tensor('person' in self.data_paths[idx], dtype=torch.long)
         return {"img": img_tensor, "label": label}
     
 

@@ -212,4 +212,6 @@ logs/*
 !logs/.gitkeep
 models/*
 !models/.gitkeep
+models_/*
+!models_/.gitkeep
 lightning_logs/*

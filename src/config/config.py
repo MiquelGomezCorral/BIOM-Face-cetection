@@ -11,7 +11,7 @@ class Configuration:
     # =========================
     DATA_PATH: str = os.path.join("data")
     wider_path: str = os.path.join("data", "WIDER_train", "images")
-    dataset_path: str = os.path.join("data", "Dataset")
+    dataset_path: str = os.path.join("data", "NaturalImages")
     all_path: str = os.path.join(dataset_path, "all")
     train_path: str = os.path.join(dataset_path, "img_train")
     train_f_path: str = os.path.join(dataset_path, "img_train_f")
@@ -27,24 +27,23 @@ class Configuration:
     val_split: float = 0.1
     test_split: float = 0.1
 
-    aug_prob: float = 0.65
+    aug_prob: float = 0.75
 
     max_files: int = 100
     gray_scale: bool = True
     
 
     # =========================
-    crop_size: int = 20
+    crop_size: int = 44
     stride: int = 4
     subsample_factor: float = 0.8
-    normalize_window: int = 5
+    normalize_window: int = 3
 
     # =========================
-    batch_size: int = 32
+    batch_size: int = 128
+    patience: int = 10
     num_workers: int = 4
-
-    # =========================
-    lr: float = 1e-5
+    lr: float = 5e-5
     weight_decay: float = 1e-4
     epochs: int = 100
 

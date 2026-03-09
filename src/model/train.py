@@ -23,7 +23,7 @@ def train_model(CONFIG: Configuration, data_module, model_module, ckpt_path: str
                 mode="max",
                 save_top_k=1,
             ),
-            EarlyStopping(monitor="val_f1", patience=10, mode="max"),
+            EarlyStopping(monitor="val_f1", patience=CONFIG.patience, mode="max"),
             LearningRateMonitor(logging_interval="epoch"),
         ],
         log_every_n_steps=10,
