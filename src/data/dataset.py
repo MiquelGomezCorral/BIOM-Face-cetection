@@ -21,14 +21,14 @@ class FACES_DATASET(Dataset):
         self.config = CONFIG
 
         if self.partition == "train":
-            # self.data_paths, self.n = list_dir_files(self.config.train_f_path)
-            self.data_paths, self.n = list_dir_files(self.config.train_path)
+            self.data_paths, self.n = list_dir_files(self.config.train_f_path)
+            # self.data_paths, self.n = list_dir_files(self.config.train_path)
         elif self.partition == "val":
-            # self.data_paths, self.n = list_dir_files(self.config.val_f_path)
-            self.data_paths, self.n = list_dir_files(self.config.val_path)
+            self.data_paths, self.n = list_dir_files(self.config.val_f_path)
+            # self.data_paths, self.n = list_dir_files(self.config.val_path)
         else:
-            # self.data_paths, self.n = list_dir_files(self.config.test_f_path)
-            self.data_paths, self.n = list_dir_files(self.config.test_path)
+            self.data_paths, self.n = list_dir_files(self.config.test_f_path)
+            # self.data_paths, self.n = list_dir_files(self.config.test_path)
 
         print(f" - Total data {self.partition}: {self.n} images")
 
@@ -79,9 +79,28 @@ def load_faces(CONFIG: Configuration):
         ], p=CONFIG.aug_prob),
         transforms.ToTensor(),
     ])
+    train_da = transforms.Compose([
+        transforms.RandomHorizontalFlip(p=CONFIG.aug_prob),
+        # Spatial: Rotation + Translation + Scaling
+        transforms.RandomApply([
+            transforms.RandomAffine(
+                degrees=15, 
+                translate=(0.1, 0.1), 
+                scale=(0.8, 1.2)
+            )
+        ], p=CONFIG.aug_prob),
+        # Noise: Simulates sensor grain
+        transforms.RandomApply([
+            transforms.Lambda(lambda x: x + torch.randn_like(x) * 0.02)
+        ], p=CONFIG.aug_prob * 0.5), # Apply noise less frequently
+        transforms.ToTensor(),
+        # Standardize for the CNN
+        transforms.Normalize(mean=[0.5], std=[0.5]) 
+    ])
     
     test_transform = transforms.Compose([
         transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5], std=[0.5])
     ])
     
     train_dataset = FACES_DATASET(partition="train", transform=train_da, CONFIG=CONFIG)
