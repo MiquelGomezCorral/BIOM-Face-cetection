@@ -34,10 +34,9 @@ def get_image_crops(img: np.ndarray, stride: int, crop_size: int, scale: float):
                 "y": int(i * scale),
                 "w": int(crop_size * scale),
                 "h": int(crop_size * scale),
-                "img": img[
-                    i:i + crop_size, 
+                "img": np.ascontiguousarray(img[
+                    i:i + crop_size,
                     j:j + crop_size
-                ],
-                
+                ]),
             })
     return crops

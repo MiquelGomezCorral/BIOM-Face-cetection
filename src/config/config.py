@@ -34,8 +34,8 @@ class Configuration:
     
 
     # =========================
-    crop_size: int = 44
-    stride: int = 4
+    crop_size: int = 88
+    stride: int = 8
     subsample_factor: float = 0.8
     normalize_window: int = 3
 

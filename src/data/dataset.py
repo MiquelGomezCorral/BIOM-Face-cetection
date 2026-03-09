@@ -21,11 +21,14 @@ class FACES_DATASET(Dataset):
         self.config = CONFIG
 
         if self.partition == "train":
-            self.data_paths, self.n = list_dir_files(self.config.train_f_path)
+            # self.data_paths, self.n = list_dir_files(self.config.train_f_path)
+            self.data_paths, self.n = list_dir_files(self.config.train_path)
         elif self.partition == "val":
-            self.data_paths, self.n = list_dir_files(self.config.val_f_path)
+            # self.data_paths, self.n = list_dir_files(self.config.val_f_path)
+            self.data_paths, self.n = list_dir_files(self.config.val_path)
         else:
-            self.data_paths, self.n = list_dir_files(self.config.test_f_path)
+            # self.data_paths, self.n = list_dir_files(self.config.test_f_path)
+            self.data_paths, self.n = list_dir_files(self.config.test_path)
 
         print(f" - Total data {self.partition}: {self.n} images")
 
