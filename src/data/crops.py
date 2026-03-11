@@ -2,13 +2,13 @@ import cv2
 import numpy as np
 from src.config import Configuration
 
-def get_all_image_crops(CONFIG: Configuration, image_path: str = None, img: np.ndarray = None):
+def get_all_image_crops(CONFIG: Configuration, img_path: str = None, img: np.ndarray = None):
     crops = []
     if img is None:
         if CONFIG.gray_scale:
-            img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+            img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
         else:
-            img = cv2.imread(image_path)
+            img = cv2.imread(img_path)
 
     current_scale = 1.0
     iteration = 0

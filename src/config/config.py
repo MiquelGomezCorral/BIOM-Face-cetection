@@ -10,6 +10,7 @@ class Configuration:
 
     # =========================
     DATA_PATH: str = os.path.join("data")
+    dataset_classes_path: str = os.path.join(DATA_PATH, "dataset_classes.json")
     wider_path: str = os.path.join("data", "WIDER_train", "images")
     dataset_path: str = os.path.join("data", "NaturalImages")
     all_path: str = os.path.join(dataset_path, "all")
@@ -34,8 +35,8 @@ class Configuration:
     
 
     # =========================
-    crop_size: int = 88
-    stride: int = 8
+    crop_size: int = 20
+    stride: int = 4
     subsample_factor: float = 0.8
     normalize_window: int = 3
 
